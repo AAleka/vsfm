@@ -1,2 +1,2 @@
 # vsfm
-## Very Simple File Manager (Dear ImGui & C++)
+## Very Simple File Manager for Windows and Linux systems (Dear ImGui & C++)
