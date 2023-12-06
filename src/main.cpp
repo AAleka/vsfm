@@ -5,6 +5,17 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+#ifdef linux
+const char* HOMEDIR = "HOME";
+const char* SLASH = "/";
+#endif
+
+#ifdef _WIN32
+#include <Windows.h>
+const char* HOMEDIR = "HOMEPATH";
+const char* SLASH = "\\";
+#endif
+
 #include <GL/gl.h>
 
 #define GLFW_INCLUDE_NONE
@@ -18,14 +29,6 @@
 #include <iostream>
 #include <stdio.h>
 #include <vector>
-
-#ifdef linux
-    const char *HOMEDIR = "HOME";
-#endif
-
-#ifdef _WIN32
-    const char *HOMEDIR = "HOMEPATH";
-#endif
 
 void error_callback(int error, const char* description) {
     fprintf(stderr, "Error: %s\n", description);
@@ -54,7 +57,7 @@ void main_window(int width, int height, std::string &path, char * search_path,
 
         ImGui::BeginDisabled(path == getenv(HOMEDIR));
         if (ImGui::Button("..", ImVec2(40.0f, 0))) {
-            path = path.substr(0, path.rfind("/"));
+            path = path.substr(0, path.rfind(SLASH));
         }
         ImGui::EndDisabled();
 
@@ -71,7 +74,7 @@ void main_window(int width, int height, std::string &path, char * search_path,
             //path = searchPath;
             ImGui::PopItemWidth();
         }
-
+        
         for (auto& i : std::filesystem::directory_iterator(path)) {
             // skip hidden directories and files
             std::stringstream line(i.path().string());
@@ -85,22 +88,24 @@ void main_window(int width, int height, std::string &path, char * search_path,
 
             if (is_hidden && !show_hidden)
                 continue;
+            
+            intermediate = i.path().string().substr(i.path().string().rfind(SLASH)).erase(0, 1);
 
-            intermediate = i.path().string().substr(i.path().string().rfind('/')).erase(0, 1);
             std::transform(intermediate.begin(), intermediate.end(), intermediate.begin(), ::tolower);
 
             for(int i = 0; search_path[i] != '\0'; i++)
                 search_path[i] = tolower(search_path[i]);
 
             // display directories and files
-            intermediate = i.path().string().substr(i.path().string().rfind('/')).erase(0, 1);
-
+            //intermediate = i.path().string().substr(i.path().string().rfind('/')).erase(0, 1);
+            
             ImGui::Selectable(((std::filesystem::is_directory(i.path()) ? "[D]  " : "[F]  ") + intermediate).c_str(), false, 0, ImVec2(0, 20.0f));
-
+            
             if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0) && std::filesystem::is_directory(i.path().string())) {
                 path = i.path().string();
                 is_app_options = false;
             }
+
             else if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0) && !std::filesystem::is_directory(i.path().string())) {
                 std::system(("xdg-open " + i.path().string()).c_str());
                 is_app_options = false;
@@ -165,7 +170,7 @@ void main_window(int width, int height, std::string &path, char * search_path,
                 ImGui::InputText("##new name", new_name, 100);
                 ImGui::SameLine();
                 if (ImGui::Button("Ok") && strcmp(new_name, "") != 0) {
-                    std::system(("mkdir " + clicked_path.substr(0, clicked_path.rfind('/')) + "/" + new_name).c_str());
+                    std::system(("mkdir " + clicked_path.substr(0, clicked_path.rfind(SLASH)) + SLASH + new_name).c_str());
                     is_app_options = false;
                     is_create_folder = false;
                     new_name[0] = '\0';
@@ -181,7 +186,7 @@ void main_window(int width, int height, std::string &path, char * search_path,
                 ImGui::InputText("##new name", new_name, 100);
                 ImGui::SameLine();
                 if (ImGui::Button("Ok") && strcmp(new_name, "") != 0) {
-                    std::system(("touch " + clicked_path.substr(0, clicked_path.rfind('/')) + "/" + new_name).c_str());
+                    std::system(("touch " + clicked_path.substr(0, clicked_path.rfind(SLASH)) + SLASH + new_name).c_str());
                     is_app_options = false;
                     is_create_file = false;
                     new_name[0] = '\0';
@@ -231,7 +236,7 @@ void main_window(int width, int height, std::string &path, char * search_path,
                 ImGui::InputText("##new name", new_name, 100);
                 ImGui::SameLine();
                 if (ImGui::Button("Ok") && strcmp(new_name, "") != 0) {
-                    std::system(("mv " + clicked_path + " " + clicked_path.substr(0, clicked_path.rfind('/')) + "/" + new_name).c_str());
+                    std::system(("mv " + clicked_path + " " + clicked_path.substr(0, clicked_path.rfind(SLASH)) + SLASH + new_name).c_str());
                     is_app_options = false;
                     is_rename = false;
                     new_name[0] = '\0';
@@ -296,7 +301,7 @@ void main_window(int width, int height, std::string &path, char * search_path,
                 ImGui::InputText("##new name", new_name, 100);
                 ImGui::SameLine();
                 if (ImGui::Button("Ok") && strcmp(new_name, "") != 0) {
-                    std::system(("mkdir " + clicked_path + "/" + new_name).c_str());
+                    std::system(("mkdir " + clicked_path + SLASH + new_name).c_str());
                     is_dir_options = false;
                     is_create_folder = false;
                     new_name[0] = '\0';
@@ -313,7 +318,7 @@ void main_window(int width, int height, std::string &path, char * search_path,
                 ImGui::InputText("##new name", new_name, 100);
                 ImGui::SameLine();
                 if (ImGui::Button("Ok") && strcmp(new_name, "") != 0) {
-                    std::system(("touch " + clicked_path + "/" + new_name).c_str());
+                    std::system(("touch " + clicked_path + SLASH + new_name).c_str());
                     is_dir_options = false;
                     is_create_file = false;
                     new_name[0] = '\0';
@@ -387,7 +392,7 @@ void left_window(int width, int height, std::string &path, std::string *bookmark
 
         for (int i = 0; i < 6; i++) {
             if (bookmarks[i] != getenv(HOMEDIR)) {
-                intermediate = bookmarks[i].substr(bookmarks[i].rfind('/')).erase(0, 1);
+                intermediate = bookmarks[i].substr(bookmarks[i].rfind(SLASH)).erase(0, 1);
                 ImGui::Selectable(intermediate.c_str(), false, 0, ImVec2(0, 20.0f));
             }
             else {
@@ -400,11 +405,6 @@ void left_window(int width, int height, std::string &path, std::string *bookmark
         ImGui::EndChild();
     }
 }
-
-void top_window() {
-
-}
-
 
 
 int main() {
@@ -429,11 +429,11 @@ int main() {
 
     std::string bookmarks[6];
     bookmarks[0] = path;
-    bookmarks[1] = path + "/Documents";
-    bookmarks[2] = path + "/Downloads";
-    bookmarks[3] = path + "/Music";
-    bookmarks[4] = path + "/Pictures";
-    bookmarks[5] = path + "/Videos";
+    bookmarks[1] = path + SLASH + "Documents";
+    bookmarks[2] = path + SLASH + "Downloads";
+    bookmarks[3] = path + SLASH + "Music";
+    bookmarks[4] = path + SLASH + "Pictures";
+    bookmarks[5] = path + SLASH + "Videos";
 
     assert(glfwInit() && "Could not init GLFW!");
 
@@ -459,7 +459,7 @@ int main() {
     // variables
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
     bool show_demo_window = false;
-
+    
     while (!glfwWindowShouldClose(window)) {
         glClearColor(0.1, 0.1, 0.1, 1.0);
         glClear(GL_COLOR_BUFFER_BIT);
