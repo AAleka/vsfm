@@ -432,12 +432,7 @@ void main_window(OPTIONS& options, ImGuiWindowFlags file_manager_window_flags, I
             ImGui::SetNextWindowPos(options.mouse_pos);
             ImGui::SetNextWindowSize(ImVec2(200, 200));
 
-            ImGui::Begin("**options", &options.is_app_options,
-                ImGuiWindowFlags_NoResize
-                | ImGuiWindowFlags_NoMove
-                | ImGuiWindowFlags_NoCollapse
-                | ImGuiWindowFlags_NoTitleBar
-            );
+            ImGui::Begin("**options", &options.is_app_options, options_window_flags);
 
             ImGui::Selectable("New folder", false, 0, ImVec2(0, 20));
             if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(0)) {
